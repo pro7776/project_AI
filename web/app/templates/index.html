@@ -3,22 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Книжный рекомендатель</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>Книжный рекомендатель с ИИ</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
         <h1>📚 Найди книгу по описанию</h1>
-        <form action="/search" method="post">
-            <input type="text" name="query" placeholder="Например: детектив про сыщика-кота" required>
-            <select name="search_type">
-                <option value="description">По описанию</option>
-                <option value="title">По названию</option>
-                <option value="author">По автору</option>
-            </select>
-            <button type="submit">Искать</button>
+        <p class="subtitle">Искусственный интеллект поможет найти книги, похожие на ваше описание</p>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="query">Описание, название или автор:</label>
+                <input type="text" id="query" name="query" value="{{ query }}" placeholder="Например: грустная история о любви в России XIX века" required>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="genre">Жанр:</label>
+                    <select id="genre" name="genre">
+                        {% for genre in genres %}
+                            <option value="{{ genre }}" {% if genre == selected_genre %}selected{% endif %}>{{ genre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="author">Автор:</label>
+                    <select id="author" name="author">
+                        {% for author in authors %}
+                            <option value="{{ author }}" {% if author == selected_author %}selected{% endif %}>{{ author }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="min_rating">Минимальный рейтинг:</label>
+                    <input type="number" id="min_rating" name="min_rating" step="0.1" min="0" max="5" value="{{ min_rating }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="max_year">Год издания (до):</label>
+                    <input type="number" id="max_year" name="max_year" placeholder="2024" value="{{ max_year }}">
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-search">🔍 Найти книги</button>
         </form>
-        {{ results }}
+        
+        {% if books %}
+            <div class="results">
+                <h2>Результаты поиска ({{ books|length }} книг)</h2>
+                <table class="books-table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Автор</th>
+                            <th>Год</th>
+                            <th>Жанр</th>
+                            <th>Рейтинг</th>
+                            <th>Описание</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for book in books %}
+                        <tr>
+                            <td class="title">{{ book.title }}</td>
+                            <td>{{ book.author }}</td>
+                            <td>{{ book.year }}</td>
+                            <td>{{ book.genre }}</td>
+                            <td class="rating">{{ "%.1f"|format(book.rating) }} ★</td>
+                            <td class="description">{{ book.description }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% elif query %}
+            <div class="no-results">
+                <p>😕 По вашему запросу ничего не найдено. Попробуйте другие ключевые слова или снизьте фильтры.</p>
+            </div>
+        {% endif %}
     </div>
 </body>
 </html>

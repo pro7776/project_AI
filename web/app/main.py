@@ -1,52 +1,65 @@
-from fastapi import FastAPI, Form
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-import httpx
 import os
+import requests
+from flask import Flask, render_template, request
 
-app = FastAPI(title="Book Recommender Web UI")
+app = Flask(__name__)
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
-API_URL = os.getenv("API_URL", "http://api:8001")
-
-
-def render_html(books=None):
-    with open("app/templates/index.html", "r", encoding="utf-8") as f:
-        template = f.read()
-
-    if books is not None:
-        results_html = "<div class='results'><h2>Результаты:</h2>"
-        if books:
-            results_html += "<ul>"
-            for book in books:
-                results_html += f"<li><strong>{book['title']}</strong> – {book['author']}<br><span class='desc'>{book['description']}</span></li>"
-            results_html += "</ul>"
-        else:
-            results_html += "<p>Ничего не найдено. Попробуйте другой запрос.</p>"
-        results_html += "</div>"
-    else:
-        results_html = ""
-
-    return template.replace("{{ results }}", results_html)
+# URL ML-сервиса
+ML_SERVICE_URL = os.environ.get('ML_SERVICE_URL', 'http://model:8002')
 
 
-@app.get("/", response_class=HTMLResponse)
-async def index():
-    return HTMLResponse(content=render_html(books=None))
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    books = []
+    query = ''
+    genre_filter = 'all'
+    author_filter = 'all'
+    min_rating = 0
+    max_year = ''
+
+    # Статичные списки для фильтров (можно потом загружать из ML)
+    genres = ['all', 'russian literature', 'dostoevsky',
+              'tolstoy', 'chekhov', 'gogol', 'pushkin', 'turgenev']
+    authors = ['all', 'Fyodor Dostoevsky', 'Leo Tolstoy', 'Anton Chekhov',
+               'Nikolai Gogol', 'Alexander Pushkin', 'Ivan Turgenev']
+
+    if request.method == 'POST':
+        query = request.form.get('query', '')
+        genre_filter = request.form.get('genre', 'all')
+        author_filter = request.form.get('author', 'all')
+        min_rating = float(request.form.get('min_rating', 0))
+        max_year = request.form.get('max_year', '')
+
+        if query.strip():
+            try:
+                # Запрос к ML-сервису
+                response = requests.post(
+                    f"{ML_SERVICE_URL}/search",
+                    json={
+                        "query": query,
+                        "genre": genre_filter if genre_filter != 'all' else None,
+                        "author": author_filter if author_filter != 'all' else None,
+                        "min_rating": min_rating,
+                        "max_year": int(max_year) if max_year else None,
+                        "top_k": 20
+                    },
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    books = response.json()
+            except Exception as e:
+                print(f"Ошибка при обращении к ML-сервису: {e}")
+
+    return render_template('index.html',
+                           books=books,
+                           query=query,
+                           genres=genres,
+                           authors=authors,
+                           selected_genre=genre_filter,
+                           selected_author=author_filter,
+                           min_rating=min_rating,
+                           max_year=max_year)
 
 
-@app.post("/search", response_class=HTMLResponse)
-async def search(query: str = Form(...), search_type: str = Form(...)):
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.post(
-                f"{API_URL}/recommend",
-                json={"query": query, "type": search_type},
-                timeout=5.0
-            )
-            resp.raise_for_status()
-            books = resp.json()
-        except Exception:
-            books = []
-    return HTMLResponse(content=render_html(books=books))
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)

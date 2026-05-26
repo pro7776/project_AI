@@ -1,33 +1,26 @@
-```yaml
 version: '3.8'
 
 services:
-  ml:
-    build: ./ml
+  model:
+    build: ./model
     ports:
       - "8002:8002"
-    networks:
-      - book-net
-
-  api:
-    build: ./api
-    ports:
-      - "8001:8001"
+    volumes:
+      - ./data:/app/data
+      - ./model_cache:/root/.cache/huggingface # кэш модели
     environment:
-      - ML_SERVICE_URL=http://ml:8002
-    depends_on:
-      - ml
+      - DB_PATH=/app/data/books.db
     networks:
       - book-net
 
   web:
     build: ./web
     ports:
-      - "8000:8000"
+      - "5000:5000"
     environment:
-      - API_URL=http://api:8001
+      - ML_SERVICE_URL=http://model:8002
     depends_on:
-      - api
+      - model
     networks:
       - book-net
 
