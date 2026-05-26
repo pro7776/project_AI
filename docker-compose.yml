@@ -1,28 +1,53 @@
-version: '3.8'
-
 services:
-  model:
-    build: ./model
-    ports:
-      - "8002:8002"
+  # Контейнер для баз данных
+  data:
+    build: ./data
+    container_name: book_data
     volumes:
-      - ./data:/app/data
-      - ./model_cache:/root/.cache/huggingface # кэш модели
-    environment:
-      - DB_PATH=/app/data/books.db
+      - data_volume:/data
     networks:
       - book-net
 
+  # ML сервис
+  model:
+    build: ./model
+    container_name: book_model
+    ports:
+      - "8002:8002"
+    volumes:
+      - data_volume:/app/data
+    environment:
+      - DB_PATH=/app/data/books.db
+    depends_on:
+      - data
+    networks:
+      - book-net
+
+  # Web сервис
   web:
     build: ./web
+    container_name: book_web
     ports:
       - "5000:5000"
     environment:
       - ML_SERVICE_URL=http://model:8002
+      - LOGIN_DB_PATH=/app/data/login.db
+      - SECRET_KEY=your-secret-key-here-change-in-production
+    volumes:
+      - data_volume:/app/data
     depends_on:
       - model
+      - data
     networks:
       - book-net
+
+volumes:
+  data_volume:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/data
+      o: bind
 
 networks:
   book-net:

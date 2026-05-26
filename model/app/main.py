@@ -103,7 +103,10 @@ async def search_books(request: SearchRequest):
     if len(books) == 0 or embeddings is None:
         raise HTTPException(status_code=503, detail="Модель не загружена")
 
-    # Фильтрация книг
+    # Определяем, есть ли текстовый запрос
+    has_query = request.query and request.query.strip()
+
+    # Фильтрация книг по метаданным
     filtered_indices = []
     for i, book in enumerate(books):
         # Фильтр по жанру
@@ -138,14 +141,26 @@ async def search_books(request: SearchRequest):
     # Берём соответствующие эмбеддинги
     filtered_embeddings = embeddings[filtered_indices]
 
-    # Вычисляем эмбеддинг запроса
-    query_embedding = model.encode([request.query])
+    # Если есть текстовый запрос - считаем похожесть
+    if has_query:
+        # Вычисляем эмбеддинг запроса
+        query_embedding = model.encode([request.query])
 
-    # Считаем косинусное сходство
-    similarities = cosine_similarity(query_embedding, filtered_embeddings)[0]
+        # Считаем косинусное сходство
+        similarities = cosine_similarity(
+            query_embedding, filtered_embeddings)[0]
 
-    # Сортируем по убыванию сходства
-    top_local_indices = np.argsort(similarities)[::-1][:request.top_k]
+        # Сортируем по убыванию сходства
+        sorted_indices = np.argsort(similarities)[::-1]
+
+        # Берем только топ (по умолчанию 20, можно настроить)
+        top_k = min(request.top_k, len(filtered_indices))
+        top_local_indices = sorted_indices[:top_k]
+    else:
+        # Нет текстового запроса - показываем ВСЕ отфильтрованные книги
+        top_local_indices = list(range(len(filtered_indices)))
+        # Для всех книг similarity будет 0, так как нет сравнения
+        similarities = [0] * len(filtered_indices)
 
     # Формируем результат
     results = []
@@ -163,7 +178,29 @@ async def search_books(request: SearchRequest):
             genre=book['Genre'] if book['Genre'] else '',
             rating=float(book['Rating']) if book['Rating'] else 0,
             description=description,
-            similarity=float(similarities[local_idx])
+            similarity=float(similarities[local_idx]) if has_query else 0.0
         ))
 
     return results
+
+
+@app.get("/genres")
+async def get_genres():
+    """Получить список всех жанров"""
+    books, _ = load_books_and_embeddings()
+    genres = set()
+    for book in books:
+        if book['Genre']:
+            genres.add(book['Genre'])
+    return sorted(list(genres))
+
+
+@app.get("/authors")
+async def get_authors():
+    """Получить список всех авторов"""
+    books, _ = load_books_and_embeddings()
+    authors = set()
+    for book in books:
+        if book['Author']:
+            authors.add(book['Author'])
+    return sorted(list(authors))[:100]
