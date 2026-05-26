@@ -17,3 +17,163 @@
 4. **Выдача результата** – список книг с полями: `title`, `author`, `description`.
 
 
+
+### Основные возможности
+
+- 🔍 **Поиск по описанию** — ИИ находит книги, семантически похожие на ваш запрос (топ-20 результатов)
+- 📝 **Фильтрация** — по жанру, автору, году издания и рейтингу
+- 📖 **Поиск по названию** — точное совпадение или частичное вхождение
+- 👤 **Авторизация и регистрация** — безопасный вход с хешированием паролей (bcrypt)
+- 👑 **Админ-панель** — управление книгами (CRUD) и пользователями
+- ✏️ **Редактирование профиля** — смена логина и пароля
+
+### Архитектура
+┌─────────────────────────────────────────────────────────────┐
+│ Пользователь │
+└─────────────────────────────┬───────────────────────────────┘
+│
+▼
+┌─────────────────────────────────────────────────────────────┐
+│ Web-сервис (Flask) │
+│ порт: 5000 │
+│ index.html, admin.html, profile.html │
+└─────────────────────────────┬───────────────────────────────┘
+│ HTTP
+▼
+┌─────────────────────────────────────────────────────────────┐
+│ ML-сервис (FastAPI) │
+│ порт: 8002 │
+│ SentenceTransformer (paraphrase-multilingual) │
+└─────────────────────────────┬───────────────────────────────┘
+│ SQLite
+▼
+┌─────────────────────────────────────────────────────────────┐
+│ Базы данных (SQLite) │
+│ books.db (1009 книг), login.db │
+└─────────────────────────────────────────────────────────────┘
+
+text
+
+## 🚀 Запуск проекта
+
+### Требования
+- Docker Desktop
+- Git
+
+### Установка и запуск
+
+```bash
+# 1. Клонирование репозитория
+git clone https://github.com/pro7776/project_AI.git
+cd book-recommender
+
+# 2. Запуск Docker контейнеров
+docker-compose up --build
+
+Доступ к сервисам
+Сервис	URL	Описание
+Web-интерфейс	http://localhost:5000	Основной сайт
+ML-API	http://localhost:8002/docs	Документация API
+Админ-панель	http://localhost:5000/admin	Управление (только для админов)
+Создание администратора
+bash
+# Запустить скрипт для хеширования пароля
+python scripts/hash_password.py
+
+# Вставить полученный хеш в базу данных
+# или использовать админ-панель после создания первого пользователя
+📁 Структура проекта
+text
+book-recommender/
+├── README.md                 # Документация
+├── docker-compose.yml        # Оркестрация сервисов
+├── .gitignore               # Игнорируемые файлы
+│
+├── model/                   # ML-сервис
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app/
+│       ├── __init__.py
+│       └── main.py          # FastAPI + SentenceTransformer
+│
+├── web/                     # Web-сервис
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app/
+│       ├── __init__.py
+│       ├── main.py          # Flask + маршруты
+│       ├── auth.py          # Авторизация
+│       ├── admin.py         # Админские функции
+│       ├── templates/
+│       │   ├── index.html
+│       │   ├── login.html
+│       │   ├── register.html
+│       │   ├── profile.html
+│       │   ├── admin.html
+│       │   └── edit_book.html
+│       └── static/
+│           └── style.css
+│
+├── data/                    # Базы данных
+│   ├── Dockerfile           # Контейнер для SQLite
+│   ├── init.sh
+│   ├── books.db             # 1009 книг
+│   └── login.db             # Пользователи
+│
+└── scripts/
+    └── hash_password.py     # Утилита для хеширования паролей
+🔧 Технологии
+Компонент	Технология
+Web-сервис	Flask 3.0
+ML-сервис	FastAPI + SentenceTransformer
+Модель	paraphrase-multilingual-MiniLM-L12-v2
+База данных	SQLite
+Контейнеризация	Docker + Docker Compose
+Авторизация	bcrypt (хеширование паролей)
+Векторные вычисления	NumPy, scikit-learn
+📊 База данных книг
+books.db: 1009 книг
+
+Поля: id, Title, Author, Year, Genre, Description, Rating, Rating_Count
+
+Жанры: russian literature, dostoevsky, tolstoy, chekhov, gogol, pushkin, turgenev и др.
+
+👥 Роли пользователей
+Роль	Возможности
+Пользователь	Поиск книг, просмотр результатов, редактирование своего профиля
+Администратор	Всё, что может пользователь + добавление/редактирование/удаление книг, управление пользователями
+🔄 API эндпоинты (ML-сервис)
+Метод	Эндпоинт	Описание
+GET	/health	Проверка статуса
+GET	/genres	Список всех жанров
+GET	/authors	Список авторов
+POST	/search	Поиск книг
+Пример запроса к /search:
+json
+{
+  "query": "роман о любви и войне",
+  "genre": "tolstoy",
+  "author": "Leo Tolstoy",
+  "min_rating": 4.0,
+  "max_year": 1900,
+  "top_k": 20
+}
+🛠️ Разработка
+Локальный запуск (без Docker)
+bash
+# ML-сервис
+cd model
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8002
+
+# Web-сервис (новое окно терминала)
+cd web
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+set ML_SERVICE_URL=http://localhost:8002  # Windows
+# export ML_SERVICE_URL=http://localhost:8002  # Linux/Mac
+python -m app.main
