@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Книжный рекомендатель{% endblock %}
+
+{% block content %}
+<h1>📚 Book Recommender</h1>
+
+<div class="user-info">
+    <span>👤 {{ session.username }} ({{ session.role if session.role else 'user' }})</span>
+    <a href="{{ url_for('auth.logout') }}" class="btn-small">Выйти</a>
+    {% if session.role == 'administrator' %}
+        <a href="{{ url_for('admin.admin_panel') }}" class="btn-small">🔧 Админ-панель</a>
+    {% endif %}
+</div>
+
+<form method="POST">
+    <div class="form-group">
+        <label>🔍 Поиск по описанию :</label>
+        <input type="text" name="query" value="{{ query }}" placeholder="Опишите, что хотите почитать...">
+    </div>
+    
+    <div class="form-group">
+        <label>📖 Фильтр по названию книги:</label>
+        <input type="text" name="title" value="{{ title_filter }}" placeholder="Введите название книги...">
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label>🎭 Жанр:</label>
+            <select name="genre">
+                <option value="all">Все жанры</option>
+                <option value="russian literature">Русская литература</option>
+                <option value="dostoevsky">Достоевский</option>
+                <option value="tolstoy">Толстой</option>
+                <option value="chekhov">Чехов</option>
+                <option value="gogol">Гоголь</option>
+                <option value="pushkin">Пушкин</option>
+                <option value="turgenev">Тургенев</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>✍️ Автор:</label>
+            <input type="text" name="author" value="{{ author_filter }}" placeholder="Введите автора...">
+        </div>
+    </div>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label>⭐ Минимальный рейтинг:</label>
+            <input type="number" name="min_rating" step="0.1" min="0" max="5" value="{{ min_rating }}">
+        </div>
+        
+        <div class="form-group">
+            <label>📅 Год издания (до):</label>
+            <input type="number" name="max_year" value="{{ max_year }}" placeholder="2024">
+        </div>
+    </div>
+    
+    <button type="submit" class="btn-search">🔍 Найти книги</button>
+</form>
+
+{% if books %}
+<div class="results">
+    <h2>Результаты ({{ books|length }})</h2>
+    <table class="books-table">
+        <thead>
+            <tr><th>Название</th><th>Автор</th><th>Год</th><th>Жанр</th><th>Рейтинг</th><th>Описание</th></tr>
+        </thead>
+        <tbody>
+            {% for book in books %}
+            <tr>
+                <td class="title">{{ book.title }}</td>
+                <td>{{ book.author }}</td>
+                <td>{{ book.year }}</td>
+                <td>{{ book.genre }}</td>
+                <td class="rating">{{ "%.1f"|format(book.rating) }} ★</td>
+                <td class="description">{{ book.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

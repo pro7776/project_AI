@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<form method="POST">
+    <div class="form-group">
+        <label>Название *:</label>
+        <input type="text" name="title" value="{{ book.Title if book else '' }}" required>
+    </div>
+    <div class="form-group">
+        <label>Автор:</label>
+        <input type="text" name="author" value="{{ book.Author if book else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Год:</label>
+        <input type="number" name="year" step="1" value="{{ book.Year if book else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Жанр:</label>
+        <input type="text" name="genre" value="{{ book.Genre if book else '' }}">
+    </div>
+    <div class="form-group">
+        <label>Описание:</label>
+        <textarea name="description" rows="5">{{ book.Description if book else '' }}</textarea>
+    </div>
+    <div class="form-group">
+        <label>Рейтинг:</label>
+        <input type="number" name="rating" step="0.1" value="{{ book.Rating if book else 0 }}">
+    </div>
+    <div class="form-group">
+        <label>Количество оценок:</label>
+        <input type="number" name="rating_count" value="{{ book.Rating_Count if book else 0 }}">
+    </div>
+    
+    <button type="submit" class="btn-search">Сохранить</button>
+    <a href="{{ url_for('admin.admin_panel') }}" class="btn">Отмена</a>
+</form>
+{% endblock %}

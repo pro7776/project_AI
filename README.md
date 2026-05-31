@@ -1,179 +1,207 @@
-# Book Recommender – ML‑сервис для поиска книг по описанию
+# 📚 Book Recommender
 
-## Введение (актуальность)
-Современные книжные рекомендательные системы чаще всего работают на основе истории покупок или рейтингов (коллаборативная фильтрация). Однако пользователи часто хотят найти книгу, **просто описав словами** свои предпочтения: «захватывающий детектив в стиле нуар», «уютное фэнтези про библиотекаря» или «научпоп о квантовой физике для начинающих».
+Сервис для поиска книг по описанию с использованием искусственного интеллекта. Проект выполнен в рамках семестровой работы по курсу "Разработка ML-сервисов".
 
-**Book Recommender** решает эту задачу:
-- позволяет ввести произвольный текст (описание, автор, название);
-- возвращает список книг из базы данных, семантически близких к запросу;
-- предоставляет три интерфейса: веб‑форма, REST API, и отдельный ML‑сервис (для последующего внедрения модели).
+## 🎯 Функциональность
 
-## Функциональные требования
-1. **Приём запроса** через веб‑интерфейс или REST API:  
-   - поле `query` (текст описания или название/автор);  
-   - поле `type` (`description`, `title`, `author`) – тип поиска.
-2. **Обработка запроса** – ML‑сервис возвращает до 5 наиболее релевантных книг.
-3. **База книг** – статический набор (в будущем PostgreSQL или FAISS). Текущая заглушка: 5–10 предопределённых книг.
-4. **Выдача результата** – список книг с полями: `title`, `author`, `description`.
-
-
-
-### Основные возможности
-
-- 🔍 **Поиск по описанию** — ИИ находит книги, семантически похожие на ваш запрос (топ-20 результатов)
-- 📝 **Фильтрация** — по жанру, автору, году издания и рейтингу
+- 🔍 **Поиск книг** — по текстовому описанию (ИИ находит семантически похожие книги)
 - 📖 **Поиск по названию** — точное совпадение или частичное вхождение
-- 👤 **Авторизация и регистрация** — безопасный вход с хешированием паролей (bcrypt)
+- 🎭 **Фильтрация** — по жанру, автору, году издания и рейтингу
+- 👤 **Авторизация** — регистрация и вход с хешированием паролей (bcrypt)
+- 📜 **История запросов** — просмотр всех предыдущих поисков
 - 👑 **Админ-панель** — управление книгами (CRUD) и пользователями
-- ✏️ **Редактирование профиля** — смена логина и пароля
 
-### Архитектура
+## 🏗 Архитектура
 ┌─────────────────────────────────────────────────────────────┐
 │ Пользователь │
 └─────────────────────────────┬───────────────────────────────┘
 │
 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Web-сервис (Flask) │
-│ порт: 5000 │
-│ index.html, admin.html, profile.html │
+│ Flask Web App (порт 5000) │
+│ Рендеринг страниц, аутентификация │
 └─────────────────────────────┬───────────────────────────────┘
 │ HTTP
 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ ML-сервис (FastAPI) │
-│ порт: 8002 │
+│ FastAPI ML API (порт 8000) │
 │ SentenceTransformer (paraphrase-multilingual) │
 └─────────────────────────────┬───────────────────────────────┘
-│ SQLite
+│ SQL
 ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Базы данных (SQLite) │
-│ books.db (1009 книг), login.db │
+│ PostgreSQL (порт 5432) │
+│ Таблицы: users, books, predictions │
 └─────────────────────────────────────────────────────────────┘
+
+text
+
+## 🛠 Технологии
+
+| Компонент | Технология |
+|-----------|------------|
+| Веб-фреймворк | Flask 3.0 |
+| ML-фреймворк | FastAPI 0.115 |
+| ORM | SQLAlchemy 2.0 |
+| База данных | PostgreSQL 15 |
+| ML-модель | SentenceTransformer (paraphrase-multilingual-MiniLM-L12-v2) |
+| Контейнеризация | Docker + Docker Compose |
+| Управление зависимостями | uv |
+| Линтер/форматтер | ruff |
+| Проверка типов | mypy |
+| Хеширование паролей | bcrypt |
+
+## 📁 Структура проекта
+book-recommender/
+├── README.md
+├── .gitignore
+├── .pre-commit-config.yaml
+├── pyproject.toml
+├── docker-compose.yml
+│
+├── flask_app/ # Web-сервис
+│ ├── Dockerfile
+│ ├── pyproject.toml
+│ └── app/
+│ ├── init.py
+│ ├── config.py
+│ ├── database.py
+│ ├── models.py
+│ ├── routes/
+│ │ ├── auth.py
+│ │ ├── main.py
+│ │ ├── history.py
+│ │ └── admin.py
+│ ├── services/
+│ │ ├── auth_service.py
+│ │ ├── prediction_service.py
+│ │ ├── ml_client.py
+│ │ ├── book_service.py
+│ │ └── user_service.py
+│ ├── templates/
+│ │ ├── base.html
+│ │ ├── index.html
+│ │ ├── login.html
+│ │ ├── register.html
+│ │ ├── history.html
+│ │ ├── admin.html
+│ │ └── edit_book.html
+│ └── static/
+│ └── style.css
+│
+├── fastapi_app/ # ML-сервис
+│ ├── Dockerfile
+│ ├── pyproject.toml
+│ └── app/
+│ ├── init.py
+│ ├── config.py
+│ ├── database.py
+│ ├── models.py
+│ ├── routers/
+│ │ ├── predict.py
+│ │ ├── health.py
+│ │ └── model_info.py
+│ ├── services/
+│ │ ├── model_service.py
+│ │ └── prediction_service.py
+│ └── repositories/
+│ └── prediction_repository.py
+│
+└── data/ # Persistent volume для PostgreSQL
+└── (файлы БД)
 
 text
 
 ## 🚀 Запуск проекта
 
 ### Требования
+
 - Docker Desktop
 - Git
+- 8+ GB RAM (для модели SentenceTransformer)
 
 ### Установка и запуск
 
 ```bash
 # 1. Клонирование репозитория
-git clone https://github.com/pro7776/project_AI.git
+git clone https://github.com/ваш_username/book-recommender.git
 cd book-recommender
 
-# 2. Запуск Docker контейнеров
-docker-compose up --build
+# 2. Создание администратора (первый запуск)
+python scripts/hash_password.py
+# Введите пароль и скопируйте хеш
 
+# 3. Запуск всех сервисов
+docker-compose up -d --build
+
+# 4. Создание администратора в БД
+docker exec -it book_db psql -U bookuser -d bookdb -c "
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user';
+INSERT INTO users (username, hashed_password, role) 
+VALUES ('admin', 'ваш_хеш_пароля', 'administrator');
+"
+
+# 5. Перенос данных книг (если есть SQLite)
+python scripts/migrate_sqlite_to_postgres.py
 Доступ к сервисам
 Сервис	URL	Описание
-Web-интерфейс	http://localhost:5000	Основной сайт
-ML-API	http://localhost:8002/docs	Документация API
-Админ-панель	http://localhost:5000/admin	Управление (только для админов)
+Веб-интерфейс	http://localhost:5000	Основной сайт
+ML API	http://localhost:8000/docs	Документация FastAPI
+Админ-панель	http://localhost:5000/admin	Только для администраторов
 Создание администратора
+Зарегистрируйтесь как обычный пользователь
+
+Зайдите в контейнер БД:
+
 bash
-# Запустить скрипт для хеширования пароля
-python scripts/hash_password.py
+docker exec -it book_db psql -U bookuser -d bookdb
+Выполните:
 
-# Вставить полученный хеш в базу данных
-# или использовать админ-панель после создания первого пользователя
-📁 Структура проекта
-text
-book-recommender/
-├── README.md                 # Документация
-├── docker-compose.yml        # Оркестрация сервисов
-├── .gitignore               # Игнорируемые файлы
-│
-├── model/                   # ML-сервис
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       ├── __init__.py
-│       └── main.py          # FastAPI + SentenceTransformer
-│
-├── web/                     # Web-сервис
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       ├── __init__.py
-│       ├── main.py          # Flask + маршруты
-│       ├── auth.py          # Авторизация
-│       ├── admin.py         # Админские функции
-│       ├── templates/
-│       │   ├── index.html
-│       │   ├── login.html
-│       │   ├── register.html
-│       │   ├── profile.html
-│       │   ├── admin.html
-│       │   └── edit_book.html
-│       └── static/
-│           └── style.css
-│
-├── data/                    # Базы данных
-│   ├── Dockerfile           # Контейнер для SQLite
-│   ├── init.sh
-│   ├── books.db             # 1009 книг
-│   └── login.db             # Пользователи
-│
-└── scripts/
-    └── hash_password.py     # Утилита для хеширования паролей
-🔧 Технологии
-Компонент	Технология
-Web-сервис	Flask 3.0
-ML-сервис	FastAPI + SentenceTransformer
-Модель	paraphrase-multilingual-MiniLM-L12-v2
-База данных	SQLite
-Контейнеризация	Docker + Docker Compose
-Авторизация	bcrypt (хеширование паролей)
-Векторные вычисления	NumPy, scikit-learn
-📊 База данных книг
-books.db: 1009 книг
+sql
+UPDATE users SET role = 'administrator' WHERE username = 'ваш_логин';
+🔧 Разработка
+Локальный запуск без Docker
+bash
+# FastAPI
+cd fastapi_app
+uv run uvicorn app:app --reload --port 8000
 
-Поля: id, Title, Author, Year, Genre, Description, Rating, Rating_Count
-
-Жанры: russian literature, dostoevsky, tolstoy, chekhov, gogol, pushkin, turgenev и др.
-
-👥 Роли пользователей
-Роль	Возможности
-Пользователь	Поиск книг, просмотр результатов, редактирование своего профиля
-Администратор	Всё, что может пользователь + добавление/редактирование/удаление книг, управление пользователями
-🔄 API эндпоинты (ML-сервис)
+# Flask (в другом терминале)
+cd flask_app
+uv run python -m flask run --port 5000
+Запуск тестов
+bash
+pytest tests/
+Проверка типов
+bash
+mypy flask_app/ fastapi_app/
+Линтинг
+bash
+ruff check flask_app/ fastapi_app/
+ruff format flask_app/ fastapi_app/
+📊 API Эндпоинты
+FastAPI (ML сервис)
 Метод	Эндпоинт	Описание
 GET	/health	Проверка статуса
 GET	/genres	Список всех жанров
 GET	/authors	Список авторов
-POST	/search	Поиск книг
-Пример запроса к /search:
+POST	/predict	Поиск похожих книг
+Пример запроса к /predict
 json
 {
-  "query": "роман о любви и войне",
+  "user_id": 1,
+  "description": "роман о любви и войне",
+  "title": "Война и мир",
   "genre": "tolstoy",
   "author": "Leo Tolstoy",
   "min_rating": 4.0,
-  "max_year": 1900,
-  "top_k": 20
+  "max_year": 1900
 }
-🛠️ Разработка
-Локальный запуск (без Docker)
+👥 Роли пользователей
+Роль	Возможности
+Пользователь	Поиск книг, просмотр истории, редактирование профиля
+Администратор	Всё из пользователя + управление книгами (CRUD), управление пользователями
+🐛 Известные проблемы и решения
+Ошибка подключения к ML сервису
 bash
-# ML-сервис
-cd model
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# .venv\Scripts\activate   # Windows
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8002
-
-# Web-сервис (новое окно терминала)
-cd web
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-set ML_SERVICE_URL=http://localhost:8002  # Windows
-# export ML_SERVICE_URL=http://localhost:8002  # Linux/Mac
-python -m app.main
+docker-compose restart fastapi

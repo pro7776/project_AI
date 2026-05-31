@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Админ-панель{% endblock %}
+
+{% block content %}
+<h1>🔧 Админ-панель</h1>
+
+<div class="user-info">
+    <span>👤 {{ session.username }} ({{ session.role if session.role else 'user' }})</span>
+    <a href="{{ url_for('main.index') }}" class="btn-small">← На главную</a>
+    <a href="{{ url_for('auth.logout') }}" class="btn-small">Выйти</a>
+</div>
+
+<!-- Управление книгами -->
+<div class="card">
+    <div class="card-header">
+        <h3>📚 Управление книгами</h3>
+        <a href="{{ url_for('admin.add_book_route') }}" class="btn btn-success">➕ Добавить книгу</a>
+    </div>
+    <div class="card-body">
+        <table class="books-table">
+            <thead>
+                <tr><th>ID</th><th>Название</th><th>Автор</th><th>Год</th><th>Жанр</th><th>Действия</th></tr>
+            </thead>
+            <tbody>
+                {% for book in books %}
+                <tr>
+                    <td>{{ book.id }}</td>
+                    <td>{{ book.title if book.title else book.Title }}</td>
+                    <td>{{ book.author if book.author else book.Author }}</td>
+                    <td>{{ book.year if book.year else book.Year }}</td>
+                    <td>{{ book.genre if book.genre else book.Genre }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.edit_book_route', book_id=book.id) }}" class="btn-small">✏️</a>
+                        <a href="{{ url_for('admin.delete_book_route', book_id=book.id) }}" onclick="return confirm('Удалить книгу?')" class="btn-small btn-danger">🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Управление пользователями -->
+<div class="card mt-3">
+    <div class="card-header">
+        <h3>👥 Управление пользователями</h3>
+    </div>
+    <div class="card-body">
+        <table class="books-table">
+            <thead>
+                <tr><th>ID</th><th>Логин</th><th>Роль</th><th>Действия</th></tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.role if user.role else 'user' }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.make_admin', user_id=user.id) }}" class="btn-small">👑 Сделать админом</a>
+                        <a href="{{ url_for('admin.delete_user_route', user_id=user.id) }}" onclick="return confirm('Удалить пользователя?')" class="btn-small btn-danger">🗑️</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

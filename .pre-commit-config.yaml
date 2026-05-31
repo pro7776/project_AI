@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.0
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-requests
+          - types-python-dateutil
+          - sqlalchemy
+          - flask
+          - fastapi
+        args: [--strict, --ignore-missing-imports]
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.6.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
